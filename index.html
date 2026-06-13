@@ -295,13 +295,13 @@
 
             // 创建并播放底鼓
             const kickAudio = new Audio(kickFile);
-            kickAudio.volume = 0.1;
+            kickAudio.volume = 0.05;
             kickAudio.play().catch(e => console.warn("drum_fail:", e));
             activeAudioElements.push(kickAudio);
 
             // 创建并播放吉他或钢琴
             const melodyAudio = new Audio(melodyFile);
-            melodyAudio.volume = 0.1;
+            melodyAudio.volume = 0.05;
             melodyAudio.play().catch(e => console.warn("melody_fail:", e));
             activeAudioElements.push(melodyAudio);
 
