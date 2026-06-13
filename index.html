@@ -33,6 +33,7 @@
         }
 
         .art-text {
+            font-family: Comic Sans MS;
             font-size: 48px;
             font-weight: bold;
             text-align: center;
@@ -188,6 +189,39 @@
         #resetBtn:hover {
             opacity: 0.9;
         }
+        #eastereggBtn {
+            margin-top: 10px;
+            padding: 6px 14px;
+            font-size: 18px;
+            border-radius: 30px;
+            border: none;
+            background:lch(83.93% 22.55 227.87);
+            color:hsl(196, 74%, 81%);
+            transition: opacity 0.2s;
+        }
+        #eastereggBtn:hover{
+            opacity: 0.8;
+        }
+        #eastereggBtn2{
+            margin-top:10px;
+            padding: 6px 14px;
+            font-size: 18px;
+            border-radius: 30px;
+            border: none;
+            background:lch(83.93% 22.55 227.87);
+            color:hsl(196, 74%, 81%);
+            transition: opacity 0.2s;
+            display: none;
+        }
+        #eastereggBtn2:hover{
+            opacity: 0.8;
+        }
+        #fxky{
+            font-size: 25px;
+            color:lch(87.6% 32.9 211.36);
+            display:none;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -230,6 +264,9 @@
         <div class="drummer-gif">🥁🎶</div>
         <div class="playing-text" id="playingMsg">🎵 Your band is performing 🎵</div>
         <button id="resetBtn">🔄 Re-select</button>
+        <button id="eastereggBtn">👻👨‍🦳</button>
+        <button id="eastereggBtn2">🤡🤕</button>
+        <p id="fxky">FXKEX</p>
     </div>
 </div>
 
@@ -250,6 +287,9 @@
     const completeBtn = document.getElementById('completeBtn');
     const resetBtn = document.getElementById('resetBtn');
     const playingMsg = document.getElementById('playingMsg');
+    const eastereggBtn = document.getElementById('eastereggBtn');
+    const eastereggBtn2 = document.getElementById('eastereggBtn2');
+    const fxky = document.getElementById('fxky')
 
     const kickBtns = document.querySelectorAll('#kickGroup .music-option');
     const melodyBtns = document.querySelectorAll('#melodyGroup .music-option');
@@ -264,7 +304,7 @@
         piano1: new Audio('audio/piano_1.mp3'),
         piano2: new Audio('audio/piano_2.mp3'),
         Easteregg1 : new Audio('audio/dwkm.mp3'),
-        Easteregg2 : new Audio('audio/ldz.mp3')
+        Easteregg2 : new Audio('audio/IDGAF.mp3')
     };
 
     // 统一配置
@@ -298,7 +338,7 @@
         stopAllAudio();
         isPlaying = true;
 
-       if (selectedKick) {
+        if (selectedKick) {
         const kickAudio = audioSources[selectedKick];
         kickAudio.currentTime = 0;
         kickAudio.play().catch(e => console.warn('Kick play failed:', e));
@@ -320,6 +360,23 @@
         optionsPanel.style.display = 'flex';
         playingMsg.innerHTML = '🎵 Your band is performing 🎵';
     }
+
+  
+    const ebtn = eastereggBtn
+    const eaudio = audioSources.Easteregg1;
+        ebtn.addEventListener('click', function() {
+        stopAllAudio();
+        eaudio.currentTime = 0;
+        eaudio.play().catch(function(e) {});
+    });
+        
+    const ebtn2 = eastereggBtn2
+    const eaudio2 = audioSources.Easteregg2;
+        ebtn2.addEventListener('click', function() {
+        stopAllAudio();
+        eaudio2.currentTime = 0;
+        eaudio2.play().catch(function(e) {});
+    });
 
     // 事件绑定
     startBtn.addEventListener('click', () => {
@@ -356,6 +413,15 @@
     });
 
     resetBtn.addEventListener('click', resetPage);
+
+    eastereggBtn.addEventListener('click', ( ) => {
+        eastereggBtn.style.display = 'none';
+        eastereggBtn2.style.display = 'flex';
+    })
+    eastereggBtn2.addEventListener('click', ( ) => {
+        eastereggBtn2.style.display = 'none';
+        fxky.style.display = 'flex'
+    })
 </script>
 </body>
 </html>
