@@ -54,6 +54,10 @@
             border: none;
             border-radius: 60px;
             cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+        #buttonstart:hover {
+            opacity: 0.9;
         }
 
         .options-panel {
@@ -87,6 +91,7 @@
             flex: 2;
             height: 5px;
             border-radius: 10px;
+            min-width: 150px;
         }
 
         .speed-value {
@@ -109,8 +114,11 @@
             border-radius: 60px;
             color: white;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
-
+        .music-option:hover {
+            border-color: #f5af19;
+        }
         .music-option.selected {
             background: hwb(167 14% 0%);
             color: #1e1e2a;
@@ -127,6 +135,10 @@
             color: white;
             cursor: pointer;
             margin-top: 20px;
+            transition: opacity 0.2s ease;
+        }
+        #completeBtn:hover {
+            opacity: 0.9;
         }
 
         .performance-area {
@@ -159,6 +171,22 @@
             background: #00000066;
             padding: 8px 18px;
             border-radius: 40px;
+            line-height: 1.6;
+        }
+
+        #resetBtn {
+            margin-top: 15px;
+            padding: 12px 28px;
+            font-size: 18px;
+            border-radius: 60px;
+            border: none;
+            background: #444654;
+            color: #fff;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        #resetBtn:hover {
+            opacity: 0.9;
         }
     </style>
 </head>
@@ -169,7 +197,7 @@
 
     <div id="optionsPanel" class="options-panel">
         <div class="option-group">
-            <div class="group-title">⚡BPM</div>
+            <div class="group-title">⚡BPM[just for display,sorry]</div>
             <div class="speed-area">
                 <input type="range" id="bpmSlider" min="60" max="180" value="110" step="1">
                 <span class="speed-value" id="bpmValue">110 BPM</span>
@@ -179,7 +207,7 @@
         <div class="option-group">
             <div class="group-title">🥁 Bass drum (Choose one out of three options)</div>
             <div class="btn-group" id="kickGroup">
-                <button data-kick="kick1" class="music-option">🎵 Bass drum · 1</button>
+                <button data-kick="kick1" class="music-option selected">🎵 Bass drum · 1</button>
                 <button data-kick="kick2" class="music-option">🎵 Bass drum · 2</button>
                 <button data-kick="kick3" class="music-option">🎵 Bass drum · 3</button>
             </div>
@@ -188,7 +216,7 @@
         <div class="option-group">
             <div class="group-title">🎸 guitar and 🎹 piano melody (Choose one out of four options)</div>
             <div class="btn-group" id="melodyGroup">
-                <button data-melody="guitar1" class="music-option">🎸 guitar · 1</button>
+                <button data-melody="guitar1" class="music-option selected">🎸 guitar · 1</button>
                 <button data-melody="guitar2" class="music-option">🎸 guitar · 2</button>
                 <button data-melody="piano1" class="music-option">🎹 piano · 1</button>
                 <button data-melody="piano2" class="music-option">🎹 piano · 2</button>
@@ -201,186 +229,125 @@
     <div id="performanceArea" class="performance-area">
         <div class="drummer-gif">🥁🎶</div>
         <div class="playing-text" id="playingMsg">🎵 Your band is performing 🎵</div>
+        <button id="resetBtn">🔄 Re-select</button>
     </div>
 </div>
 
 <script>
-    //用户数据记录
-    let selectedKick = null;
-    let selectedmelody = null;
+    // 全局状态
+    let selectedKick = 'kick1';
+    let selectedMelody = 'guitar1';
     let currentBPM = 110;
+    let isPlaying = false;
 
-    const artTextDiv = document.querySelector('.art-text');
+    // DOM
+    const artTitle = document.getElementById('artTitle');
     const startBtn = document.getElementById('buttonstart');
     const optionsPanel = document.getElementById('optionsPanel');
     const performanceArea = document.getElementById('performanceArea');
     const bpmSlider = document.getElementById('bpmSlider');
     const bpmValueSpan = document.getElementById('bpmValue');
     const completeBtn = document.getElementById('completeBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const playingMsg = document.getElementById('playingMsg');
 
     const kickBtns = document.querySelectorAll('#kickGroup .music-option');
     const melodyBtns = document.querySelectorAll('#melodyGroup .music-option');
 
-    //全局音频控制
-    let currentLoop = null;          // 定时器ID
-    let isPlaying = false;
-    let audioContext = null;          // 用于合成声音
-    let activeAudioElements = [];     // 存储真实音频元素
+    // 预加载所有音频，开启原生循环
+    const audioSources = {
+        kick1: new Audio('audio/kick_1.mp3'),
+        kick2: new Audio('audio/kick_2.mp3'),
+        kick3: new Audio('audio/kick_3.mp3'),
+        guitar1: new Audio('audio/guitar_1.mp3'),
+        guitar2: new Audio('audio/guitar_2.mp3'),
+        piano1: new Audio('audio/piano_1.mp3'),
+        piano2: new Audio('audio/piano_2.mp3')
+    };
 
-    // 停止所有正在播放的真实音频
-    function stopAllRealAudio() {
-        activeAudioElements.forEach(audio => {
+    // 统一配置：音量 + 原生循环播放
+    Object.values(audioSources).forEach(audio => {
+        audio.volume = 0.4;
+        audio.loop = true;
+    });
+
+    // 停止所有音频
+    function stopAllAudio() {
+        isPlaying = false;
+        Object.values(audioSources).forEach(audio => {
             audio.pause();
             audio.currentTime = 0;
         });
-        activeAudioElements = [];
     }
 
-    // 停止循环
-    function stopLoop() {
-        if (currentLoop) {
-            clearInterval(currentLoop);
-            currentLoop = null;
-        }
-        isPlaying = false;
-    }
-
-    // 🎵 核心：根据选项播放真实音频文件
-    function playMusicBySelection() {
-        // 停止之前的播放
-        stopLoop();
-        stopAllRealAudio();
-
-        if (!selectedKick && !selectedmelody) {
-            alert("Please select at least one instrument！");
-            return false;
-        }
-
-        // 计算节拍间隔 (毫秒)
-        const intervalMs = (60 / currentBPM) ;
-        
-        // 音频文件路径
-        const audioFiles = {
-            // 底鼓样式
-            kick1: 'audio/kick_1.mp3',     
-            kick2: 'audio/kick_2.mp3', 
-            kick3: 'audio/kick_3.mp3',       
-            // 吉他旋律
-            guitar1: 'audio/guitar_1.mp3', 
-            guitar2: 'audio/guitar_2.mp3', 
-            // 钢琴旋律
-            piano1: 'audio/piano_1.mp3',   
-            piano2: 'audio/piano_2.mp3'   
-        };
-
-        // 获取用户选择的文件
-        const kickFile = audioFiles[selectedKick];
-        const melodyFile = audioFiles[selectedmelody]
-
-        // 检查文件是否存在
-        console.log(`willperform: bassdrum=${kickFile}, guitar=${melodyFile}, piano=${melodyFile}`);
-
-        // 用于记录当前播放到第几拍
-        let beatCount = 0;
-        const totalBeats = 64; // 一共播放64拍
-
-        // 播放函数：同时播放三个乐器
-        const playBeat = () => {
-            if (beatCount >= totalBeats) {
-                // 播放完毕，停止循环
-                stopLoop();
-                document.getElementById('playingMsg').innerHTML = '🎉 Perfect! Click "Refresh" to reselect. 🎉';
-                return;
-            }
-
-            // 创建并播放底鼓
-            const kickAudio = new Audio(kickFile);
-            kickAudio.volume = 1;
-            kickAudio.play().catch(e => console.warn("drum_fail:", e));
-            activeAudioElements.push(kickAudio);
-
-            // 创建并播放吉他或钢琴
-            const melodyAudio = new Audio(melodyFile);
-            melodyAudio.volume = 1;
-            melodyAudio.play().catch(e => console.warn("melody_fail:", e));
-            activeAudioElements.push(melodyAudio);
-
-            // 每播放完一拍，清理一下已结束的音频引用
-            setTimeout(() => {
-                activeAudioElements = activeAudioElements.filter(a => !a.ended);
-            }, intervalMs);
-
-            beatCount++;
-        };
-
-        // 立即播放第一拍
-        playBeat();
-        // 设置循环
-        currentLoop = setInterval(playBeat, intervalMs);
-        isPlaying = true;
-        
-        // 更新显示文本
-        document.getElementById('playingMsg').innerHTML = `🎵 performing · BPM ${currentBPM} · ${getKickName()} · ${getGuitarName()} · ${getPianoName()} 🎵`;
-        return true;
-    }
-
-    // 辅助函数：获取中文名称（用于显示）
+    // 乐器名称
     function getKickName() {
-        if(selectedKick === 'kick1') return 'bass drum 1';
-        if(selectedKick === 'kick2') return 'bass drum 2';
-        if(selectedKick === 'kick3') return 'bass drum 3';
-        return 'non bass drum';
+        const map = { kick1: 'Bass drum 1', kick2: 'Bass drum 2', kick3: 'Bass drum 3' };
+        return map[selectedKick];
     }
     function getMelodyName() {
-        if(selectedmelody=== 'guitar1') return 'guitar 1';
-        if(selectedmelody === 'guitar2') return 'guitar 2';
-        if(selectedmelody === 'piano1') return 'piano 1';
-        if(selectedmelody=== 'piano2') return 'piano 2';
-        return 'non melody'
+        const map = { guitar1: 'Guitar 1', guitar2: 'Guitar 2', piano1: 'Piano 1', piano2: 'Piano 2' };
+        return map[selectedMelody];
     }
 
-    //界面交互
+    // 开始播放（整段循环）
+    function playMusic() {
+        if (isPlaying) return;
+        stopAllAudio();
+        isPlaying = true;
+
+        const kickAudio = audioSources[selectedKick];
+        const melodyAudio = audioSources[selectedMelody];
+
+        kickAudio.play().catch(() => {});
+        melodyAudio.play().catch(() => {});
+
+        playingMsg.innerHTML = `🎵 Performing · BPM ${currentBPM}<br>${getKickName()} · ${getMelodyName()}`;
+    }
+
+    // 重置页面
+    function resetPage() {
+        stopAllAudio();
+        performanceArea.style.display = 'none';
+        optionsPanel.style.display = 'flex';
+        playingMsg.innerHTML = '🎵 Your band is performing 🎵';
+    }
+
+    // 事件绑定
     startBtn.addEventListener('click', () => {
-        artTextDiv.style.display = 'none';
+        artTitle.style.display = 'none';
         startBtn.style.display = 'none';
         optionsPanel.style.display = 'flex';
     });
 
     bpmSlider.addEventListener('input', (e) => {
-        currentBPM = e.target.value;
-        bpmValueSpan.innerText = currentBPM + ' BPM';
+        currentBPM = +e.target.value;
+        bpmValueSpan.textContent = `${currentBPM} BPM`;
     });
 
-    // 底鼓选择
     kickBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             kickBtns.forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-            selectedKick = btn.getAttribute('data-kick');
+            selectedKick = btn.dataset.kick;
         });
     });
-    // melody选择
+
     melodyBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             melodyBtns.forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-            selectedmelody = btn.getAttribute('data-melody');
+            selectedMelody = btn.dataset.melody;
         });
     });
-   
 
-    // 完成按钮
     completeBtn.addEventListener('click', () => {
-        if (!selectedKick && !selectedmelody) {
-            alert("Please complete at least one of the following choices: Bass drum, Guitar or Piano!");
-            return;
-        }
-        // 隐藏选项面板，显示演奏区
         optionsPanel.style.display = 'none';
         performanceArea.style.display = 'flex';
-        // 开始播放音乐
-        playMusicBySelection();
+        playMusic();
     });
+
+    resetBtn.addEventListener('click', resetPage);
 </script>
 </body>
 </html>
