@@ -207,7 +207,7 @@
         <div class="option-group">
             <div class="group-title">🥁 Bass drum (Choose one out of three options)</div>
             <div class="btn-group" id="kickGroup">
-                <button data-kick="kick1" class="music-option selected">🎵 Bass drum · 1</button>
+                <button data-kick="kick1" class="music-option">🎵 Bass drum · 1</button>
                 <button data-kick="kick2" class="music-option">🎵 Bass drum · 2</button>
                 <button data-kick="kick3" class="music-option">🎵 Bass drum · 3</button>
             </div>
@@ -216,7 +216,7 @@
         <div class="option-group">
             <div class="group-title">🎸 guitar and 🎹 piano melody (Choose one out of four options)</div>
             <div class="btn-group" id="melodyGroup">
-                <button data-melody="guitar1" class="music-option selected">🎸 guitar · 1</button>
+                <button data-melody="guitar1" class="music-option">🎸 guitar · 1</button>
                 <button data-melody="guitar2" class="music-option">🎸 guitar · 2</button>
                 <button data-melody="piano1" class="music-option">🎹 piano · 1</button>
                 <button data-melody="piano2" class="music-option">🎹 piano · 2</button>
@@ -235,8 +235,8 @@
 
 <script>
     // 全局状态
-    let selectedKick = 'kick1';
-    let selectedMelody = 'guitar1';
+    let selectedKick = null;
+    let selectedMelody = null;
     let currentBPM = 110;
     let isPlaying = false;
 
@@ -262,13 +262,15 @@
         guitar1: new Audio('audio/guitar_1.mp3'),
         guitar2: new Audio('audio/guitar_2.mp3'),
         piano1: new Audio('audio/piano_1.mp3'),
-        piano2: new Audio('audio/piano_2.mp3')
+        piano2: new Audio('audio/piano_2.mp3'),
+        Easteregg1 : new Audio('audio/dwkm.mp3'),
+        Easteregg2 : new Audio('audio/ldz.mp3')
     };
 
-    // 统一配置：音量 + 原生循环播放
+    // 统一配置
     Object.values(audioSources).forEach(audio => {
-        audio.volume = 0.4;
-        audio.loop = true;
+        audio.volume = 0.6;
+        audio.loop = false;
     });
 
     // 停止所有音频
@@ -290,17 +292,23 @@
         return map[selectedMelody];
     }
 
-    // 开始播放（整段循环）
+    // 开始播放
     function playMusic() {
         if (isPlaying) return;
         stopAllAudio();
         isPlaying = true;
 
+       if (selectedKick) {
         const kickAudio = audioSources[selectedKick];
+        kickAudio.currentTime = 0;
+        kickAudio.play().catch(e => console.warn('Kick play failed:', e));
+    }
+    
+        if (selectedMelody) {
         const melodyAudio = audioSources[selectedMelody];
-
-        kickAudio.play().catch(() => {});
-        melodyAudio.play().catch(() => {});
+        melodyAudio.currentTime = 0;
+        melodyAudio.play().catch(e => console.warn('Melody play failed:', e));
+    }
 
         playingMsg.innerHTML = `🎵 Performing · BPM ${currentBPM}<br>${getKickName()} · ${getMelodyName()}`;
     }
@@ -321,7 +329,7 @@
     });
 
     bpmSlider.addEventListener('input', (e) => {
-        currentBPM = +e.target.value;
+        currentBPM = +e.target.value;   
         bpmValueSpan.textContent = `${currentBPM} BPM`;
     });
 
